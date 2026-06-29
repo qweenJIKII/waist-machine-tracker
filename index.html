@@ -761,9 +761,40 @@
   }
 
   /* ===================================================
-     タイマー管理
+     ブラウザ通知パーミッション
   =================================================== */
-  const timers = {}; // { idx: { total, remaining, interval, state:'idle'|'running'|'paused'|'done' } }
+  let notifPermission = Notification.permission;
+
+  async function requestNotifPermission() {
+    if (notifPermission === 'granted') return true;
+    if (notifPermission === 'denied') return false;
+    const result = await Notification.requestPermission();
+    notifPermission = result;
+    return result === 'granted';
+  }
+
+  function sendNotif(title, body) {
+    if (notifPermission !== 'granted') return;
+    try {
+      const n = new Notification(title, {
+        body,
+        icon: 'https://cdn.jsdelivr.net/gh/twitter/twemoji@14/assets/72x72/1f3cb.png',
+        badge: 'https://cdn.jsdelivr.net/gh/twitter/twemoji@14/assets/72x72/1f3cb.png',
+        vibrate: [200, 100, 200],
+        tag: `waist-timer-${Date.now()}`
+      });
+      n.onclick = () => { window.focus(); n.close(); };
+    } catch(e) {}
+  }
+
+  /* ===================================================
+     タイマー管理（開始時刻記録方式 + Notification API）
+     state: 'idle' | 'running' | 'paused' | 'done'
+     startedAt: Date.now() ms（running時のみ）
+     pausedRemaining: ポーズ時点の残り秒数
+  =================================================== */
+  const timers = {};
+  const LS_TIMERS = 'waist_timers'; // バックグラウンド復元用
 
   function volToSec(vol) {
     const m = parseInt(vol);
@@ -771,22 +802,56 @@
   }
 
   function fmtTime(sec) {
-    const m = Math.floor(sec / 60);
-    const s = sec % 60;
-    return `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+    const s = Math.max(0, sec);
+    return `${String(Math.floor(s / 60)).padStart(2,'0')}:${String(s % 60).padStart(2,'0')}`;
+  }
+
+  function timerGetRemaining(tm) {
+    if (tm.state === 'running') {
+      const elapsed = Math.floor((Date.now() - tm.startedAt) / 1000);
+      return Math.max(0, tm.pausedRemaining - elapsed);
+    }
+    return tm.pausedRemaining;
+  }
+
+  function timerSavePersist() {
+    const data = {};
+    Object.entries(timers).forEach(([idx, tm]) => {
+      data[idx] = {
+        state: tm.state,
+        total: tm.total,
+        pausedRemaining: timerGetRemaining(tm),
+        startedAt: tm.startedAt,
+        notifTimeout: null
+      };
+    });
+    localStorage.setItem(LS_TIMERS, JSON.stringify(data));
   }
 
   function timerStart(idx) {
+    requestNotifPermission();
     const t = todayTasks[idx];
     if (!timers[idx]) {
-      timers[idx] = { total: volToSec(t.vol), remaining: volToSec(t.vol), interval: null, state: 'idle' };
+      timers[idx] = {
+        total: volToSec(t.vol),
+        pausedRemaining: volToSec(t.vol),
+        startedAt: null,
+        state: 'idle',
+        interval: null,
+        notifTimeout: null
+      };
     }
     const tm = timers[idx];
+    if (tm.state === 'done') return;
 
     if (tm.state === 'running') {
       // ポーズ
+      tm.pausedRemaining = timerGetRemaining(tm);
+      tm.startedAt = null;
       clearInterval(tm.interval);
+      clearTimeout(tm.notifTimeout);
       tm.state = 'paused';
+      timerSavePersist();
       document.getElementById(`timerStartBtn_${idx}`).textContent = '▶ 再開';
       document.getElementById(`timerStartBtn_${idx}`).className = 'timer-btn start';
       document.getElementById(`timerRing_${idx}`).classList.remove('running');
@@ -796,7 +861,20 @@
     }
 
     // スタート / 再開
+    tm.startedAt = Date.now();
     tm.state = 'running';
+
+    // 通知タイマーをセット（別タブでも発火）
+    clearTimeout(tm.notifTimeout);
+    tm.notifTimeout = setTimeout(() => {
+      sendNotif(
+        `🎉 ${t.name} 完了！`,
+        `${t.vol}のトレーニングが終わりました。お疲れさまでした！`
+      );
+    }, tm.pausedRemaining * 1000);
+
+    timerSavePersist();
+
     const startBtn = document.getElementById(`timerStartBtn_${idx}`);
     startBtn.textContent = '⏸ ポーズ';
     startBtn.className = 'timer-btn pause';
@@ -806,26 +884,32 @@
     statusEl.textContent = '計測中...';
     statusEl.className = 'timer-status running';
 
+    clearInterval(tm.interval);
     tm.interval = setInterval(() => {
-      tm.remaining--;
-      timerUpdateUI(idx);
-      if (tm.remaining <= 0) {
+      const rem = timerGetRemaining(tm);
+      timerUpdateUI(idx, rem);
+      if (rem <= 0) {
         clearInterval(tm.interval);
         tm.state = 'done';
+        timerSavePersist();
         timerFinish(idx);
       }
-    }, 1000);
+    }, 500); // 500msポーリングで精度向上
   }
 
   function timerReset(idx) {
     if (!timers[idx]) return;
     clearInterval(timers[idx].interval);
-    timers[idx].remaining = timers[idx].total;
+    clearTimeout(timers[idx].notifTimeout);
+    timers[idx].pausedRemaining = timers[idx].total;
+    timers[idx].startedAt = null;
     timers[idx].state = 'idle';
+    timerSavePersist();
 
     const startBtn = document.getElementById(`timerStartBtn_${idx}`);
     startBtn.textContent = '▶ スタート';
     startBtn.className = 'timer-btn start';
+    startBtn.onclick = () => timerStart(idx);
     document.getElementById(`timerResetBtn_${idx}`).style.display = 'none';
     document.getElementById(`timerRing_${idx}`).classList.remove('running');
     const dispEl = document.getElementById(`timerDisp_${idx}`);
@@ -839,34 +923,32 @@
     statusEl.className = 'timer-status';
   }
 
-  function timerUpdateUI(idx) {
+  function timerUpdateUI(idx, rem) {
     const tm = timers[idx];
+    const remaining = rem !== undefined ? rem : timerGetRemaining(tm);
     const dispEl = document.getElementById(`timerDisp_${idx}`);
     const fgEl   = document.getElementById(`timerFg_${idx}`);
+    if (!dispEl || !fgEl) return;
     const r = 23;
     const circ = 2 * Math.PI * r;
-    const ratio = tm.remaining / tm.total;
+    const ratio = remaining / tm.total;
     fgEl.style.strokeDashoffset = String(circ * (1 - ratio));
-
-    dispEl.textContent = fmtTime(tm.remaining);
-    if (tm.remaining <= 30) {
+    dispEl.textContent = fmtTime(remaining);
+    if (remaining <= 30) {
       dispEl.className = 'timer-display urgent';
       fgEl.className   = 'timer-ring-fg urgent';
     }
   }
 
   function timerFinish(idx) {
-    document.getElementById(`timerRing_${idx}`).classList.remove('running');
+    const ringEl = document.getElementById(`timerRing_${idx}`);
+    if (ringEl) ringEl.classList.remove('running');
     const dispEl = document.getElementById(`timerDisp_${idx}`);
-    dispEl.textContent = '完了！';
-    dispEl.className = 'timer-display finished';
+    if (dispEl) { dispEl.textContent = '完了！'; dispEl.className = 'timer-display finished'; }
     const startBtn = document.getElementById(`timerStartBtn_${idx}`);
-    startBtn.textContent = '✓ 完了';
-    startBtn.className = 'timer-btn done';
-    startBtn.onclick = null;
+    if (startBtn) { startBtn.textContent = '✓ 完了'; startBtn.className = 'timer-btn done'; startBtn.onclick = null; }
     const statusEl = document.getElementById(`timerStatus_${idx}`);
-    statusEl.textContent = 'タイマー終了！';
-    statusEl.className = 'timer-status finished';
+    if (statusEl) { statusEl.textContent = 'タイマー終了！'; statusEl.className = 'timer-status finished'; }
     // 自動チェック
     if (!todayChecks[idx]) toggleTask(idx);
     // バイブレーション
@@ -878,8 +960,7 @@
         const osc = ctx.createOscillator();
         const gain = ctx.createGain();
         osc.connect(gain); gain.connect(ctx.destination);
-        osc.frequency.value = freq;
-        osc.type = 'sine';
+        osc.frequency.value = freq; osc.type = 'sine';
         gain.gain.setValueAtTime(0.3, ctx.currentTime + i * 0.18);
         gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + i * 0.18 + 0.4);
         osc.start(ctx.currentTime + i * 0.18);
@@ -888,6 +969,91 @@
     } catch(e) {}
     showToast(`🎉 ${todayTasks[idx].name} 完了！`);
   }
+
+  /* ===================================================
+     ページ復帰時：実行中タイマーを復元
+  =================================================== */
+  function timerRestoreAll() {
+    const saved = JSON.parse(localStorage.getItem(LS_TIMERS) || '{}');
+    Object.entries(saved).forEach(([idxStr, data]) => {
+      const idx = parseInt(idxStr);
+      if (!todayTasks[idx]) return;
+      if (data.state === 'done') return;
+
+      const elapsed = data.startedAt
+        ? Math.floor((Date.now() - data.startedAt) / 1000)
+        : 0;
+      const remaining = Math.max(0, data.pausedRemaining - elapsed);
+
+      timers[idx] = {
+        total: data.total,
+        pausedRemaining: remaining,
+        startedAt: data.state === 'running' ? Date.now() : null,
+        state: remaining <= 0 ? 'done' : data.state,
+        interval: null,
+        notifTimeout: null
+      };
+
+      if (remaining <= 0) {
+        timerFinish(idx);
+        return;
+      }
+
+      // UI復元
+      timerUpdateUI(idx, remaining);
+      document.getElementById(`timerResetBtn_${idx}`).style.display = 'inline-block';
+
+      if (data.state === 'running') {
+        // 通知タイマー再設定
+        timers[idx].notifTimeout = setTimeout(() => {
+          sendNotif(
+            `🎉 ${todayTasks[idx].name} 完了！`,
+            `${todayTasks[idx].vol}のトレーニングが終わりました。お疲れさまでした！`
+          );
+        }, remaining * 1000);
+
+        timers[idx].interval = setInterval(() => {
+          const rem = timerGetRemaining(timers[idx]);
+          timerUpdateUI(idx, rem);
+          if (rem <= 0) {
+            clearInterval(timers[idx].interval);
+            timers[idx].state = 'done';
+            timerSavePersist();
+            timerFinish(idx);
+          }
+        }, 500);
+
+        const startBtn = document.getElementById(`timerStartBtn_${idx}`);
+        if (startBtn) { startBtn.textContent = '⏸ ポーズ'; startBtn.className = 'timer-btn pause'; }
+        const ringEl = document.getElementById(`timerRing_${idx}`);
+        if (ringEl) ringEl.classList.add('running');
+        const statusEl = document.getElementById(`timerStatus_${idx}`);
+        if (statusEl) { statusEl.textContent = '計測中...'; statusEl.className = 'timer-status running'; }
+      } else {
+        const startBtn = document.getElementById(`timerStartBtn_${idx}`);
+        if (startBtn) { startBtn.textContent = '▶ 再開'; startBtn.className = 'timer-btn start'; }
+        const statusEl = document.getElementById(`timerStatus_${idx}`);
+        if (statusEl) { statusEl.textContent = '一時停止中'; statusEl.className = 'timer-status'; }
+      }
+    });
+  }
+
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') {
+      Object.keys(timers).forEach(idx => {
+        const tm = timers[parseInt(idx)];
+        if (tm && tm.state === 'running') {
+          const rem = timerGetRemaining(tm);
+          timerUpdateUI(parseInt(idx), rem);
+          if (rem <= 0) {
+            clearInterval(tm.interval);
+            tm.state = 'done';
+            timerFinish(parseInt(idx));
+          }
+        }
+      });
+    }
+  });
 
   /* ===================================================
      クリアボタン
@@ -926,6 +1092,7 @@
      初期化
   =================================================== */
   renderMenu();
+  timerRestoreAll();
 </script>
 </body>
 </html>
