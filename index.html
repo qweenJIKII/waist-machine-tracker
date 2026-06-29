@@ -1,0 +1,698 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>お腹やせマシン・マネージャー</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:       #0f2424;
+      --surface:  #1a3a3a;
+      --surface2: #1f4545;
+      --accent:   #2ecc71;
+      --accent2:  #27ae60;
+      --text:     #e8f5e9;
+      --muted:    #7da99a;
+      --danger:   #e74c3c;
+      --radius:   14px;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Helvetica Neue', Arial, 'Hiragino Kaku Gothic ProN', sans-serif;
+      min-height: 100vh;
+      padding-bottom: 40px;
+    }
+
+    /* ── Header ── */
+    .app-header {
+      background: linear-gradient(135deg, #0d2e2e 0%, #1a4a3a 100%);
+      padding: 20px 16px 14px;
+      text-align: center;
+      border-bottom: 2px solid var(--accent);
+    }
+    .app-header h1 {
+      font-size: 1.25rem;
+      font-weight: 800;
+      letter-spacing: 0.05em;
+      color: var(--accent);
+    }
+    .app-header .today-date {
+      font-size: 0.85rem;
+      color: var(--muted);
+      margin-top: 4px;
+    }
+
+    /* ── Tabs ── */
+    .tab-bar {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      display: flex;
+      background: var(--surface);
+      border-bottom: 2px solid #0f2424;
+    }
+    .tab-btn {
+      flex: 1;
+      padding: 13px 8px;
+      background: none;
+      border: none;
+      color: var(--muted);
+      font-size: 0.9rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: color 0.2s, border-bottom 0.2s;
+      border-bottom: 3px solid transparent;
+      letter-spacing: 0.03em;
+    }
+    .tab-btn.active {
+      color: var(--accent);
+      border-bottom: 3px solid var(--accent);
+    }
+
+    /* ── Container ── */
+    .container {
+      max-width: 600px;
+      margin: 0 auto;
+      padding: 16px 14px;
+    }
+
+    /* ── Tab Panels ── */
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; }
+
+    /* ── Progress Section ── */
+    .progress-section {
+      background: var(--surface);
+      border-radius: var(--radius);
+      padding: 16px;
+      margin-bottom: 16px;
+    }
+    .progress-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+    .progress-label {
+      font-size: 0.8rem;
+      color: var(--muted);
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+    .progress-pct {
+      font-size: 1.4rem;
+      font-weight: 800;
+      color: var(--accent);
+    }
+    .progress-bar-track {
+      background: #0f2424;
+      border-radius: 99px;
+      height: 10px;
+      overflow: hidden;
+    }
+    .progress-bar-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--accent2), var(--accent));
+      border-radius: 99px;
+      transition: width 0.4s cubic-bezier(.4,0,.2,1);
+      width: 0%;
+    }
+    .motivation-msg {
+      margin-top: 10px;
+      font-size: 0.88rem;
+      color: var(--accent);
+      font-weight: 700;
+      min-height: 1.2em;
+      text-align: center;
+      letter-spacing: 0.04em;
+    }
+
+    /* ── Rest Day ── */
+    .rest-card {
+      background: var(--surface);
+      border-radius: var(--radius);
+      padding: 32px 20px;
+      text-align: center;
+    }
+    .rest-card .rest-icon { font-size: 3rem; margin-bottom: 12px; }
+    .rest-card h2 { font-size: 1.2rem; color: var(--accent); margin-bottom: 8px; }
+    .rest-card p  { font-size: 0.9rem; color: var(--muted); line-height: 1.6; }
+
+    /* ── Task Cards ── */
+    .task-list { display: flex; flex-direction: column; gap: 12px; margin-bottom: 16px; }
+
+    .task-card {
+      background: var(--surface);
+      border-radius: var(--radius);
+      padding: 14px 16px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      cursor: pointer;
+      transition: background 0.2s, transform 0.15s;
+      border: 2px solid transparent;
+      user-select: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .task-card:active { transform: scale(0.98); }
+    .task-card.checked {
+      background: #1a3a2a;
+      border-color: var(--accent);
+    }
+
+    /* Custom checkbox */
+    .task-check {
+      width: 26px;
+      height: 26px;
+      min-width: 26px;
+      border-radius: 8px;
+      border: 2px solid var(--muted);
+      background: transparent;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.2s, border-color 0.2s;
+    }
+    .task-card.checked .task-check {
+      background: var(--accent);
+      border-color: var(--accent);
+    }
+    .task-check-icon {
+      display: none;
+      font-size: 0.9rem;
+      color: #fff;
+      font-weight: 900;
+    }
+    .task-card.checked .task-check-icon { display: block; }
+
+    .task-info { flex: 1; }
+    .task-name {
+      font-size: 1rem;
+      font-weight: 700;
+      color: var(--text);
+    }
+    .task-card.checked .task-name {
+      color: var(--accent);
+      text-decoration: line-through;
+      text-decoration-color: var(--accent2);
+    }
+    .task-vol {
+      display: inline-block;
+      margin-top: 3px;
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: #0f2424;
+      background: var(--accent);
+      border-radius: 99px;
+      padding: 1px 9px;
+    }
+    .task-desc {
+      margin-top: 5px;
+      font-size: 0.78rem;
+      color: var(--muted);
+      line-height: 1.4;
+    }
+    .task-machine-icon {
+      font-size: 1.8rem;
+      min-width: 36px;
+      text-align: center;
+    }
+
+    /* ── Complete Button ── */
+    .complete-btn {
+      display: block;
+      width: 100%;
+      padding: 16px;
+      background: linear-gradient(135deg, var(--accent2), var(--accent));
+      color: #fff;
+      font-size: 1rem;
+      font-weight: 800;
+      border: none;
+      border-radius: var(--radius);
+      cursor: pointer;
+      letter-spacing: 0.05em;
+      transition: opacity 0.2s, transform 0.15s;
+      box-shadow: 0 4px 18px rgba(46,204,113,0.35);
+    }
+    .complete-btn:active { transform: scale(0.98); opacity: 0.9; }
+    .complete-btn:disabled {
+      background: var(--surface2);
+      color: var(--muted);
+      box-shadow: none;
+      cursor: not-allowed;
+    }
+
+    /* ── Toast ── */
+    .toast {
+      position: fixed;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%) translateY(80px);
+      background: var(--accent);
+      color: #fff;
+      font-weight: 700;
+      font-size: 0.9rem;
+      padding: 12px 24px;
+      border-radius: 99px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+      transition: transform 0.35s cubic-bezier(.4,0,.2,1), opacity 0.35s;
+      opacity: 0;
+      z-index: 999;
+      white-space: nowrap;
+    }
+    .toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
+
+    /* ── History Tab ── */
+    .history-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 14px;
+    }
+    .history-title {
+      font-size: 1rem;
+      font-weight: 700;
+      color: var(--text);
+    }
+    .clear-btn {
+      padding: 7px 14px;
+      background: transparent;
+      border: 1.5px solid var(--danger);
+      color: var(--danger);
+      border-radius: 8px;
+      font-size: 0.78rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background 0.2s, color 0.2s;
+    }
+    .clear-btn:hover { background: var(--danger); color: #fff; }
+
+    .empty-state {
+      text-align: center;
+      padding: 48px 20px;
+      color: var(--muted);
+    }
+    .empty-state .empty-icon { font-size: 2.8rem; margin-bottom: 12px; }
+    .empty-state p { font-size: 0.9rem; }
+
+    .history-list { display: flex; flex-direction: column; gap: 12px; }
+
+    .history-card {
+      background: var(--surface);
+      border-radius: var(--radius);
+      padding: 14px 16px;
+    }
+    .history-card-date {
+      font-size: 0.82rem;
+      font-weight: 700;
+      color: var(--muted);
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .history-card-date::before {
+      content: '';
+      display: inline-block;
+      width: 8px; height: 8px;
+      background: var(--accent);
+      border-radius: 50%;
+    }
+    .history-badges { display: flex; flex-wrap: wrap; gap: 8px; }
+    .history-badge {
+      background: #0f2424;
+      border: 1.5px solid var(--accent2);
+      color: var(--accent);
+      font-size: 0.75rem;
+      font-weight: 700;
+      border-radius: 99px;
+      padding: 4px 12px;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .history-badge::before { content: '✓ '; color: var(--accent); }
+    .history-pct-badge {
+      margin-left: auto;
+      background: var(--accent);
+      color: #fff;
+      font-size: 0.75rem;
+      font-weight: 800;
+      border-radius: 99px;
+      padding: 3px 10px;
+      align-self: center;
+    }
+
+    /* ── Section divider ── */
+    .section-label {
+      font-size: 0.72rem;
+      font-weight: 700;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      margin-bottom: 10px;
+    }
+
+    @media (max-width: 400px) {
+      .app-header h1 { font-size: 1.1rem; }
+      .task-name { font-size: 0.93rem; }
+    }
+  </style>
+</head>
+<body>
+
+<header class="app-header">
+  <h1>🏋️ お腹やせマシン・マネージャー</h1>
+  <div class="today-date" id="headerDate"></div>
+</header>
+
+<nav class="tab-bar">
+  <button class="tab-btn active" data-tab="menu">今日のメニュー</button>
+  <button class="tab-btn" data-tab="history">達成履歴・ログ</button>
+</nav>
+
+<main class="container">
+  <!-- ===== TODAY'S MENU TAB ===== -->
+  <section class="tab-panel active" id="tab-menu">
+
+    <div class="progress-section" id="progressSection" style="display:none;">
+      <div class="progress-header">
+        <span class="progress-label">本日の達成率</span>
+        <span class="progress-pct" id="progressPct">0%</span>
+      </div>
+      <div class="progress-bar-track">
+        <div class="progress-bar-fill" id="progressFill"></div>
+      </div>
+      <div class="motivation-msg" id="motivationMsg"></div>
+    </div>
+
+    <p class="section-label" id="dayLabel"></p>
+
+    <div id="menuContent"></div>
+
+  </section>
+
+  <!-- ===== HISTORY TAB ===== -->
+  <section class="tab-panel" id="tab-history">
+    <div class="history-header">
+      <span class="history-title">📋 トレーニング履歴</span>
+      <button class="clear-btn" id="clearBtn">履歴をクリア</button>
+    </div>
+    <div id="historyContent"></div>
+  </section>
+</main>
+
+<div class="toast" id="toast"></div>
+
+<script>
+  /* ===================================================
+     黄金スケジュールデータ
+  =================================================== */
+  const MACHINE_ICON = {
+    "乗馬マシン":         "🏇",
+    "ウォーキングマシン": "🚶",
+    "3Dウェーブマシン":   "〰️"
+  };
+
+  const SCHEDULE = {
+    1: [ // 月
+      { name: "乗馬マシン",         vol: "15分", desc: "インナーマッスルを刺激して代謝スイッチをON" },
+      { name: "ウォーキングマシン", vol: "25分", desc: "お腹の脂肪を効率よく燃焼" },
+      { name: "3Dウェーブマシン",   vol: "10分", desc: "振動で血流を促し、老廃物の排出をサポート" }
+    ],
+    2: [ // 火
+      { name: "乗馬マシン",       vol: "15分", desc: "骨盤を正しい位置に整え体幹強化" },
+      { name: "3Dウェーブマシン", vol: "15分", desc: "気になるお腹周りの脂肪をダイレクトに揺らす" }
+    ],
+    3: null, // 水：レスト
+    4: [ // 木
+      { name: "ウォーキングマシン", vol: "30分", desc: "しっかり有酸素運動。少し傾斜をつけると効果アップ" },
+      { name: "3Dウェーブマシン",   vol: "10分", desc: "歩いた後の脚とお腹の疲労をほぐす" }
+    ],
+    5: [ // 金
+      { name: "乗馬マシン",         vol: "15分", desc: "インナーマッスルを刺激して代謝スイッチをON" },
+      { name: "ウォーキングマシン", vol: "25分", desc: "お腹の脂肪を効率よく燃焼" },
+      { name: "3Dウェーブマシン",   vol: "10分", desc: "振動で血流を促し、老廃物の排出をサポート" }
+    ],
+    6: [ // 土
+      { name: "乗馬マシン",       vol: "20分", desc: "週末のじっくり体幹引き締め" },
+      { name: "3Dウェーブマシン", vol: "10分", desc: "仕上げのシェイプアップ" }
+    ],
+    0: null  // 日：レスト
+  };
+
+  const DAY_NAMES = ["日", "月", "火", "水", "木", "金", "土"];
+
+  const MOTIVATION = [
+    { min: 0,   max: 0,   msg: "さあ、今日もはじめよう！💪" },
+    { min: 1,   max: 49,  msg: "いい調子！このまま続けよう🔥" },
+    { min: 50,  max: 99,  msg: "もう少し！ゴールが見えてきた⚡" },
+    { min: 100, max: 100, msg: "完璧です！今日も最高のトレーニング🎉" }
+  ];
+
+  /* ===================================================
+     ユーティリティ
+  =================================================== */
+  function getTodayStr() {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+  }
+
+  function formatDateJP(dateStr) {
+    const [y, m, d] = dateStr.split('-');
+    return `${y}年${m}月${d}日`;
+  }
+
+  function getMotivationMsg(pct) {
+    for (const m of MOTIVATION) {
+      if (pct >= m.min && pct <= m.max) return m.msg;
+    }
+    return "";
+  }
+
+  function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 2800);
+  }
+
+  /* ===================================================
+     localStorage キー
+  =================================================== */
+  const LS_TODAY_KEY  = 'waist_today';   // { date, checks: [bool, ...] }
+  const LS_HISTORY    = 'waist_history'; // [{date, tasks:[{name,vol}], pct}]
+
+  /* ===================================================
+     今日のメニュー レンダリング
+  =================================================== */
+  let todayTasks = [];
+  let todayChecks = [];
+
+  function renderMenu() {
+    const today = new Date();
+    const todayStr = getTodayStr();
+    const dow = today.getDay();
+    const dayName = DAY_NAMES[dow];
+
+    document.getElementById('headerDate').textContent =
+      `${formatDateJP(todayStr)}（${dayName}曜日）`;
+    document.getElementById('dayLabel').textContent =
+      `${dayName}曜日のメニュー`;
+
+    const tasks = SCHEDULE[dow];
+    const menuEl = document.getElementById('menuContent');
+    const progressSec = document.getElementById('progressSection');
+
+    if (!tasks) {
+      // レスト日
+      progressSec.style.display = 'none';
+      menuEl.innerHTML = `
+        <div class="rest-card">
+          <div class="rest-icon">🌿</div>
+          <h2>本日はレスト（お休み）です！</h2>
+          <p>今日はしっかり身体を休めましょう。<br>軽いストレッチやマッサージがおすすめです。</p>
+        </div>`;
+      return;
+    }
+
+    progressSec.style.display = 'block';
+    todayTasks = tasks;
+
+    // セッション復元
+    const saved = JSON.parse(localStorage.getItem(LS_TODAY_KEY) || 'null');
+    if (saved && saved.date === todayStr && Array.isArray(saved.checks) && saved.checks.length === tasks.length) {
+      todayChecks = saved.checks;
+    } else {
+      todayChecks = tasks.map(() => false);
+    }
+
+    // タスクカード生成
+    let html = '<div class="task-list" id="taskList">';
+    tasks.forEach((t, i) => {
+      const icon = MACHINE_ICON[t.name] || '🏋️';
+      const checked = todayChecks[i];
+      html += `
+        <div class="task-card ${checked ? 'checked' : ''}" data-idx="${i}" onclick="toggleTask(${i})">
+          <div class="task-machine-icon">${icon}</div>
+          <div class="task-info">
+            <div class="task-name">${t.name}</div>
+            <span class="task-vol">${t.vol}</span>
+            <div class="task-desc">${t.desc}</div>
+          </div>
+          <div class="task-check">
+            <span class="task-check-icon">✓</span>
+          </div>
+        </div>`;
+    });
+    html += '</div>';
+
+    html += `
+      <button class="complete-btn" id="completeBtn" onclick="completeDay()">
+        今日のトレーニングを完了する 💾
+      </button>`;
+
+    menuEl.innerHTML = html;
+    updateProgress();
+  }
+
+  function toggleTask(idx) {
+    todayChecks[idx] = !todayChecks[idx];
+
+    // DOM更新
+    const card = document.querySelector(`.task-card[data-idx="${idx}"]`);
+    if (card) card.classList.toggle('checked', todayChecks[idx]);
+
+    // localStorageへ一時保存
+    localStorage.setItem(LS_TODAY_KEY, JSON.stringify({
+      date: getTodayStr(),
+      checks: todayChecks
+    }));
+
+    updateProgress();
+  }
+
+  function updateProgress() {
+    const total   = todayChecks.length;
+    const done    = todayChecks.filter(Boolean).length;
+    const pct     = total === 0 ? 0 : Math.round((done / total) * 100);
+
+    document.getElementById('progressPct').textContent  = `${pct}%`;
+    document.getElementById('progressFill').style.width = `${pct}%`;
+    document.getElementById('motivationMsg').textContent = getMotivationMsg(pct);
+
+    const btn = document.getElementById('completeBtn');
+    if (btn) btn.disabled = done === 0;
+  }
+
+  function completeDay() {
+    const todayStr = getTodayStr();
+    const done = todayChecks.reduce((acc, c, i) => {
+      if (c) acc.push({ name: todayTasks[i].name, vol: todayTasks[i].vol });
+      return acc;
+    }, []);
+
+    if (done.length === 0) return;
+
+    const pct = Math.round((done.length / todayTasks.length) * 100);
+
+    const history = JSON.parse(localStorage.getItem(LS_HISTORY) || '[]');
+
+    // 同日の重複チェック：あれば上書き
+    const existIdx = history.findIndex(h => h.date === todayStr);
+    const entry = { date: todayStr, tasks: done, pct };
+    if (existIdx >= 0) {
+      history[existIdx] = entry;
+    } else {
+      history.unshift(entry);
+    }
+
+    localStorage.setItem(LS_HISTORY, JSON.stringify(history));
+    showToast('✅ 本日の実績を保存しました！');
+
+    // 履歴タブへ遷移
+    setTimeout(() => switchTab('history'), 700);
+  }
+
+  /* ===================================================
+     履歴タブ レンダリング
+  =================================================== */
+  function renderHistory() {
+    const history = JSON.parse(localStorage.getItem(LS_HISTORY) || '[]');
+    const el = document.getElementById('historyContent');
+
+    if (history.length === 0) {
+      el.innerHTML = `
+        <div class="empty-state">
+          <div class="empty-icon">📭</div>
+          <p>まだ履歴がありません。<br>今日のトレーニングを完了してみよう！</p>
+        </div>`;
+      return;
+    }
+
+    // 降順ソート（日付文字列で十分）
+    const sorted = [...history].sort((a, b) => b.date.localeCompare(a.date));
+
+    let html = '<div class="history-list">';
+    sorted.forEach(h => {
+      const badges = h.tasks.map(t =>
+        `<span class="history-badge">${t.name} ${t.vol}</span>`
+      ).join('');
+      html += `
+        <div class="history-card">
+          <div class="history-card-date">
+            ${formatDateJP(h.date)}
+            <span class="history-pct-badge">${h.pct}%</span>
+          </div>
+          <div class="history-badges">${badges}</div>
+        </div>`;
+    });
+    html += '</div>';
+    el.innerHTML = html;
+  }
+
+  /* ===================================================
+     クリアボタン
+  =================================================== */
+  document.getElementById('clearBtn').addEventListener('click', () => {
+    const history = JSON.parse(localStorage.getItem(LS_HISTORY) || '[]');
+    if (history.length === 0) {
+      showToast('履歴はすでに空です');
+      return;
+    }
+    if (confirm('全ての履歴を削除しますか？\nこの操作は元に戻せません。')) {
+      localStorage.removeItem(LS_HISTORY);
+      renderHistory();
+      showToast('🗑️ 履歴を削除しました');
+    }
+  });
+
+  /* ===================================================
+     タブ切り替え
+  =================================================== */
+  function switchTab(tabId) {
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+      btn.classList.toggle('active', btn.dataset.tab === tabId);
+    });
+    document.querySelectorAll('.tab-panel').forEach(panel => {
+      panel.classList.toggle('active', panel.id === `tab-${tabId}`);
+    });
+    if (tabId === 'history') renderHistory();
+  }
+
+  document.querySelectorAll('.tab-btn').forEach(btn => {
+    btn.addEventListener('click', () => switchTab(btn.dataset.tab));
+  });
+
+  /* ===================================================
+     初期化
+  =================================================== */
+  renderMenu();
+</script>
+</body>
+</html>
