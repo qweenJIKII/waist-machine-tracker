@@ -358,6 +358,82 @@
       margin-bottom: 10px;
     }
 
+    /* ── Timer ── */
+    .timer-wrap {
+      margin-top: 10px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .timer-ring-wrap {
+      position: relative;
+      width: 54px;
+      height: 54px;
+      flex-shrink: 0;
+    }
+    .timer-ring-wrap svg {
+      transform: rotate(-90deg);
+      width: 54px;
+      height: 54px;
+    }
+    .timer-ring-bg { fill: none; stroke: #0f2424; stroke-width: 4; }
+    .timer-ring-fg {
+      fill: none;
+      stroke: var(--accent);
+      stroke-width: 4;
+      stroke-linecap: round;
+      transition: stroke-dashoffset 0.9s linear;
+    }
+    .timer-ring-fg.urgent { stroke: #e74c3c; }
+    .timer-display {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.7rem;
+      font-weight: 800;
+      color: var(--accent);
+      letter-spacing: -0.02em;
+    }
+    .timer-display.urgent { color: #e74c3c; }
+    .timer-display.finished { color: var(--accent); font-size: 0.6rem; }
+    .timer-controls {
+      display: flex;
+      gap: 6px;
+      flex: 1;
+      align-items: center;
+    }
+    .timer-btn {
+      padding: 6px 14px;
+      border: none;
+      border-radius: 99px;
+      font-size: 0.78rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: opacity 0.15s, transform 0.1s;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .timer-btn:active { transform: scale(0.95); }
+    .timer-btn.start  { background: var(--accent); color: #0f2424; }
+    .timer-btn.pause  { background: #e6a817; color: #0f2424; }
+    .timer-btn.reset  { background: var(--surface2); color: var(--muted); }
+    .timer-btn.done   { background: #2ecc71; color: #fff; font-size: 0.75rem; }
+    .timer-status {
+      font-size: 0.7rem;
+      color: var(--muted);
+      white-space: nowrap;
+    }
+    .timer-status.running { color: var(--accent); }
+    .timer-status.finished { color: #2ecc71; }
+
+    @keyframes pulse-ring {
+      0%   { box-shadow: 0 0 0 0 rgba(46,204,113,0.5); }
+      70%  { box-shadow: 0 0 0 8px rgba(46,204,113,0); }
+      100% { box-shadow: 0 0 0 0 rgba(46,204,113,0); }
+    }
+    .timer-ring-wrap.running { animation: pulse-ring 1.5s infinite; border-radius: 50%; }
+
     @media (max-width: 400px) {
       .app-header h1 { font-size: 1.1rem; }
       .task-name { font-size: 0.93rem; }
@@ -537,16 +613,36 @@
     tasks.forEach((t, i) => {
       const icon = MACHINE_ICON[t.name] || '🏋️';
       const checked = todayChecks[i];
+      const mins = parseInt(t.vol);
+      const r = 23;
+      const circ = Math.round(2 * Math.PI * r);
       html += `
-        <div class="task-card ${checked ? 'checked' : ''}" data-idx="${i}" onclick="toggleTask(${i})">
-          <div class="task-machine-icon">${icon}</div>
-          <div class="task-info">
-            <div class="task-name">${t.name}</div>
+        <div class="task-card ${checked ? 'checked' : ''}" data-idx="${i}">
+          <div class="task-machine-icon" onclick="toggleTask(${i})">${icon}</div>
+          <div class="task-info" style="flex:1;">
+            <div style="display:flex;align-items:center;justify-content:space-between;">
+              <div class="task-name" onclick="toggleTask(${i})">${t.name}</div>
+              <div class="task-check" onclick="toggleTask(${i})">
+                <span class="task-check-icon">✓</span>
+              </div>
+            </div>
             <span class="task-vol">${t.vol}</span>
             <div class="task-desc">${t.desc}</div>
-          </div>
-          <div class="task-check">
-            <span class="task-check-icon">✓</span>
+            <div class="timer-wrap" id="timerWrap_${i}">
+              <div class="timer-ring-wrap" id="timerRing_${i}">
+                <svg viewBox="0 0 54 54">
+                  <circle class="timer-ring-bg" cx="27" cy="27" r="${r}"/>
+                  <circle class="timer-ring-fg" id="timerFg_${i}" cx="27" cy="27" r="${r}"
+                    stroke-dasharray="${circ}" stroke-dashoffset="0"/>
+                </svg>
+                <div class="timer-display" id="timerDisp_${i}">${String(mins).padStart(2,'0')}:00</div>
+              </div>
+              <div class="timer-controls">
+                <button class="timer-btn start" id="timerStartBtn_${i}" onclick="timerStart(${i})">▶ スタート</button>
+                <button class="timer-btn reset" id="timerResetBtn_${i}" onclick="timerReset(${i})" style="display:none;">↺</button>
+                <span class="timer-status" id="timerStatus_${i}">目標 ${t.vol}</span>
+              </div>
+            </div>
           </div>
         </div>`;
     });
@@ -654,6 +750,135 @@
     });
     html += '</div>';
     el.innerHTML = html;
+  }
+
+  /* ===================================================
+     タイマー管理
+  =================================================== */
+  const timers = {}; // { idx: { total, remaining, interval, state:'idle'|'running'|'paused'|'done' } }
+
+  function volToSec(vol) {
+    const m = parseInt(vol);
+    return isNaN(m) ? 600 : m * 60;
+  }
+
+  function fmtTime(sec) {
+    const m = Math.floor(sec / 60);
+    const s = sec % 60;
+    return `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+  }
+
+  function timerStart(idx) {
+    const t = todayTasks[idx];
+    if (!timers[idx]) {
+      timers[idx] = { total: volToSec(t.vol), remaining: volToSec(t.vol), interval: null, state: 'idle' };
+    }
+    const tm = timers[idx];
+
+    if (tm.state === 'running') {
+      // ポーズ
+      clearInterval(tm.interval);
+      tm.state = 'paused';
+      document.getElementById(`timerStartBtn_${idx}`).textContent = '▶ 再開';
+      document.getElementById(`timerStartBtn_${idx}`).className = 'timer-btn start';
+      document.getElementById(`timerRing_${idx}`).classList.remove('running');
+      document.getElementById(`timerStatus_${idx}`).textContent = '一時停止中';
+      document.getElementById(`timerStatus_${idx}`).className = 'timer-status';
+      return;
+    }
+
+    // スタート / 再開
+    tm.state = 'running';
+    const startBtn = document.getElementById(`timerStartBtn_${idx}`);
+    startBtn.textContent = '⏸ ポーズ';
+    startBtn.className = 'timer-btn pause';
+    document.getElementById(`timerResetBtn_${idx}`).style.display = 'inline-block';
+    document.getElementById(`timerRing_${idx}`).classList.add('running');
+    const statusEl = document.getElementById(`timerStatus_${idx}`);
+    statusEl.textContent = '計測中...';
+    statusEl.className = 'timer-status running';
+
+    tm.interval = setInterval(() => {
+      tm.remaining--;
+      timerUpdateUI(idx);
+      if (tm.remaining <= 0) {
+        clearInterval(tm.interval);
+        tm.state = 'done';
+        timerFinish(idx);
+      }
+    }, 1000);
+  }
+
+  function timerReset(idx) {
+    if (!timers[idx]) return;
+    clearInterval(timers[idx].interval);
+    timers[idx].remaining = timers[idx].total;
+    timers[idx].state = 'idle';
+
+    const startBtn = document.getElementById(`timerStartBtn_${idx}`);
+    startBtn.textContent = '▶ スタート';
+    startBtn.className = 'timer-btn start';
+    document.getElementById(`timerResetBtn_${idx}`).style.display = 'none';
+    document.getElementById(`timerRing_${idx}`).classList.remove('running');
+    const dispEl = document.getElementById(`timerDisp_${idx}`);
+    dispEl.textContent = fmtTime(timers[idx].total);
+    dispEl.className = 'timer-display';
+    const fgEl = document.getElementById(`timerFg_${idx}`);
+    fgEl.style.strokeDashoffset = '0';
+    fgEl.className = 'timer-ring-fg';
+    const statusEl = document.getElementById(`timerStatus_${idx}`);
+    statusEl.textContent = `目標 ${todayTasks[idx].vol}`;
+    statusEl.className = 'timer-status';
+  }
+
+  function timerUpdateUI(idx) {
+    const tm = timers[idx];
+    const dispEl = document.getElementById(`timerDisp_${idx}`);
+    const fgEl   = document.getElementById(`timerFg_${idx}`);
+    const r = 23;
+    const circ = 2 * Math.PI * r;
+    const ratio = tm.remaining / tm.total;
+    fgEl.style.strokeDashoffset = String(circ * (1 - ratio));
+
+    dispEl.textContent = fmtTime(tm.remaining);
+    if (tm.remaining <= 30) {
+      dispEl.className = 'timer-display urgent';
+      fgEl.className   = 'timer-ring-fg urgent';
+    }
+  }
+
+  function timerFinish(idx) {
+    document.getElementById(`timerRing_${idx}`).classList.remove('running');
+    const dispEl = document.getElementById(`timerDisp_${idx}`);
+    dispEl.textContent = '完了！';
+    dispEl.className = 'timer-display finished';
+    const startBtn = document.getElementById(`timerStartBtn_${idx}`);
+    startBtn.textContent = '✓ 完了';
+    startBtn.className = 'timer-btn done';
+    startBtn.onclick = null;
+    const statusEl = document.getElementById(`timerStatus_${idx}`);
+    statusEl.textContent = 'タイマー終了！';
+    statusEl.className = 'timer-status finished';
+    // 自動チェック
+    if (!todayChecks[idx]) toggleTask(idx);
+    // バイブレーション
+    if (navigator.vibrate) navigator.vibrate([200, 100, 200]);
+    // 通知音（Web Audio API）
+    try {
+      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      [880, 1100, 1320].forEach((freq, i) => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.connect(gain); gain.connect(ctx.destination);
+        osc.frequency.value = freq;
+        osc.type = 'sine';
+        gain.gain.setValueAtTime(0.3, ctx.currentTime + i * 0.18);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + i * 0.18 + 0.4);
+        osc.start(ctx.currentTime + i * 0.18);
+        osc.stop(ctx.currentTime + i * 0.18 + 0.4);
+      });
+    } catch(e) {}
+    showToast(`🎉 ${todayTasks[idx].name} 完了！`);
   }
 
   /* ===================================================
