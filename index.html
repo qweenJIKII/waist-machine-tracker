@@ -434,9 +434,248 @@
     }
     .timer-ring-wrap.running { animation: pulse-ring 1.5s infinite; border-radius: 50%; }
 
+    /* ── Rank / XP Header ── */
+    .rank-bar {
+      background: linear-gradient(135deg, #0d2e2e 0%, #1a4a3a 100%);
+      padding: 10px 16px 12px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      border-bottom: 1px solid #1f4545;
+    }
+    .rank-emblem {
+      font-size: 2rem;
+      min-width: 44px;
+      text-align: center;
+      filter: drop-shadow(0 0 6px rgba(46,204,113,0.5));
+    }
+    .rank-info { flex: 1; min-width: 0; }
+    .rank-name {
+      font-size: 0.82rem;
+      font-weight: 800;
+      color: var(--accent);
+      letter-spacing: 0.06em;
+    }
+    .xp-bar-track {
+      margin-top: 4px;
+      background: #0f2424;
+      border-radius: 99px;
+      height: 7px;
+      overflow: hidden;
+    }
+    .xp-bar-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #f39c12, #f1c40f);
+      border-radius: 99px;
+      transition: width 0.6s cubic-bezier(.4,0,.2,1);
+    }
+    .xp-label {
+      font-size: 0.68rem;
+      color: var(--muted);
+      margin-top: 3px;
+    }
+    .streak-badge {
+      text-align: center;
+      min-width: 56px;
+    }
+    .streak-num {
+      font-size: 1.5rem;
+      font-weight: 900;
+      color: #f1c40f;
+      line-height: 1;
+    }
+    .streak-label {
+      font-size: 0.6rem;
+      color: var(--muted);
+      font-weight: 700;
+      letter-spacing: 0.05em;
+    }
+
+    /* ── Weekly Calendar ── */
+    .week-calendar {
+      background: var(--surface);
+      border-radius: var(--radius);
+      padding: 12px 14px;
+      margin-bottom: 14px;
+    }
+    .week-calendar-title {
+      font-size: 0.72rem;
+      font-weight: 700;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      margin-bottom: 10px;
+    }
+    .week-days {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 4px;
+    }
+    .week-day {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+    }
+    .week-day-name {
+      font-size: 0.65rem;
+      color: var(--muted);
+      font-weight: 700;
+    }
+    .week-day-dot {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.9rem;
+      font-weight: 800;
+      background: #0f2424;
+      color: var(--muted);
+      border: 2px solid transparent;
+    }
+    .week-day-dot.done    { background: #1a3a2a; border-color: var(--accent); color: var(--accent); }
+    .week-day-dot.today   { border-color: #f1c40f; color: #f1c40f; }
+    .week-day-dot.rest    { opacity: 0.4; }
+    .week-day-dot.partial { background: #1a3a2a; border-color: #f39c12; color: #f39c12; }
+
+    /* ── Level Up Modal ── */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.7);
+      z-index: 500;
+      align-items: center;
+      justify-content: center;
+    }
+    .modal-overlay.show { display: flex; }
+    .modal-box {
+      background: var(--surface);
+      border-radius: 20px;
+      padding: 32px 28px;
+      text-align: center;
+      max-width: 320px;
+      width: 90%;
+      border: 2px solid var(--accent);
+      animation: pop-in 0.35s cubic-bezier(.175,.885,.32,1.275);
+    }
+    @keyframes pop-in {
+      from { transform: scale(0.6); opacity: 0; }
+      to   { transform: scale(1);   opacity: 1; }
+    }
+    .modal-box .modal-icon { font-size: 4rem; margin-bottom: 12px; }
+    .modal-box h2 { color: var(--accent); font-size: 1.3rem; margin-bottom: 6px; }
+    .modal-box p  { color: var(--muted); font-size: 0.88rem; margin-bottom: 20px; line-height: 1.5; }
+    .modal-close-btn {
+      padding: 12px 32px;
+      background: linear-gradient(135deg, var(--accent2), var(--accent));
+      color: #fff;
+      border: none;
+      border-radius: 99px;
+      font-size: 0.95rem;
+      font-weight: 800;
+      cursor: pointer;
+    }
+
+    /* ── Body Log Tab ── */
+    .body-log-form {
+      background: var(--surface);
+      border-radius: var(--radius);
+      padding: 16px;
+      margin-bottom: 14px;
+    }
+    .body-log-form h3 {
+      font-size: 0.82rem;
+      color: var(--muted);
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 12px;
+    }
+    .input-row {
+      display: flex;
+      gap: 10px;
+      align-items: flex-end;
+      flex-wrap: wrap;
+    }
+    .input-group { flex: 1; min-width: 90px; }
+    .input-group label {
+      display: block;
+      font-size: 0.72rem;
+      color: var(--muted);
+      font-weight: 700;
+      margin-bottom: 5px;
+    }
+    .input-group input {
+      width: 100%;
+      background: #0f2424;
+      border: 1.5px solid var(--surface2);
+      border-radius: 8px;
+      color: var(--text);
+      font-size: 1rem;
+      font-weight: 700;
+      padding: 8px 10px;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    .input-group input:focus { border-color: var(--accent); }
+    .log-save-btn {
+      padding: 9px 20px;
+      background: var(--accent);
+      color: #0f2424;
+      border: none;
+      border-radius: 8px;
+      font-size: 0.88rem;
+      font-weight: 800;
+      cursor: pointer;
+      white-space: nowrap;
+      align-self: flex-end;
+    }
+
+    /* ── SVG Graph ── */
+    .graph-card {
+      background: var(--surface);
+      border-radius: var(--radius);
+      padding: 14px 16px;
+      margin-bottom: 12px;
+    }
+    .graph-card h3 {
+      font-size: 0.78rem;
+      color: var(--muted);
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 10px;
+    }
+    .graph-wrap { overflow-x: auto; }
+    .graph-wrap svg { display: block; }
+    .body-log-list { display: flex; flex-direction: column; gap: 8px; margin-top: 12px; }
+    .body-log-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #0f2424;
+      border-radius: 8px;
+      padding: 8px 12px;
+      font-size: 0.8rem;
+    }
+    .body-log-item .log-date { color: var(--muted); }
+    .body-log-item .log-vals { color: var(--accent); font-weight: 700; }
+    .body-log-del {
+      background: none;
+      border: none;
+      color: var(--danger);
+      cursor: pointer;
+      font-size: 0.8rem;
+      padding: 2px 6px;
+    }
+
     @media (max-width: 400px) {
       .app-header h1 { font-size: 1.1rem; }
       .task-name { font-size: 0.93rem; }
+      .week-day-dot { width: 26px; height: 26px; font-size: 0.75rem; }
     }
   </style>
 </head>
@@ -447,9 +686,23 @@
   <div class="today-date" id="headerDate"></div>
 </header>
 
+<div class="rank-bar">
+  <div class="rank-emblem" id="rankEmblem">🥚</div>
+  <div class="rank-info">
+    <div class="rank-name" id="rankName">ビギナー</div>
+    <div class="xp-bar-track"><div class="xp-bar-fill" id="xpFill" style="width:0%"></div></div>
+    <div class="xp-label" id="xpLabel">0 XP</div>
+  </div>
+  <div class="streak-badge">
+    <div class="streak-num" id="streakNum">0</div>
+    <div class="streak-label">🔥 連続</div>
+  </div>
+</div>
+
 <nav class="tab-bar">
   <button class="tab-btn active" data-tab="menu">今日のメニュー</button>
-  <button class="tab-btn" data-tab="history">達成履歴・ログ</button>
+  <button class="tab-btn" data-tab="history">達成履歴</button>
+  <button class="tab-btn" data-tab="body">体型記録</button>
 </nav>
 
 <main class="container">
@@ -467,6 +720,7 @@
       <div class="motivation-msg" id="motivationMsg"></div>
     </div>
 
+    <div id="weekCalendar"></div>
     <p class="section-label" id="dayLabel"></p>
 
     <div id="menuContent"></div>
@@ -481,7 +735,44 @@
     </div>
     <div id="historyContent"></div>
   </section>
+
+  <!-- ===== BODY LOG TAB ===== -->
+  <section class="tab-panel" id="tab-body">
+    <div class="body-log-form">
+      <h3>📏 今日の体型を記録</h3>
+      <div class="input-row">
+        <div class="input-group">
+          <label>体重 (kg)</label>
+          <input type="number" id="inputWeight" step="0.1" placeholder="60.0" />
+        </div>
+        <div class="input-group">
+          <label>ウエスト (cm)</label>
+          <input type="number" id="inputWaist" step="0.1" placeholder="80.0" />
+        </div>
+        <button class="log-save-btn" onclick="saveBodyLog()">保存</button>
+      </div>
+    </div>
+    <div class="graph-card">
+      <h3>📉 体重の推移</h3>
+      <div class="graph-wrap" id="weightGraph"></div>
+    </div>
+    <div class="graph-card">
+      <h3>📐 ウエストの推移</h3>
+      <div class="graph-wrap" id="waistGraph"></div>
+    </div>
+    <div class="body-log-list" id="bodyLogList"></div>
+  </section>
 </main>
+
+<!-- Level Up Modal -->
+<div class="modal-overlay" id="levelUpModal">
+  <div class="modal-box">
+    <div class="modal-icon" id="modalIcon">🎖️</div>
+    <h2 id="modalTitle">ランクアップ！</h2>
+    <p id="modalDesc">新しいランクに到達しました！</p>
+    <button class="modal-close-btn" onclick="document.getElementById('levelUpModal').classList.remove('show')">やったー！</button>
+  </div>
+</div>
 
 <div class="toast" id="toast"></div>
 
@@ -567,8 +858,149 @@
   /* ===================================================
      localStorage キー
   =================================================== */
-  const LS_TODAY_KEY  = 'waist_today';   // { date, checks: [bool, ...] }
-  const LS_HISTORY    = 'waist_history'; // [{date, tasks:[{name,vol}], pct}]
+  const LS_TODAY_KEY  = 'waist_today';
+  const LS_HISTORY    = 'waist_history';
+  const LS_RANK       = 'waist_rank';    // { xp, level }
+  const LS_BODY       = 'waist_body';    // [{date, weight, waist}]
+
+  /* ===================================================
+     ランク定義
+  =================================================== */
+  const RANKS = [
+    { level:1,  name:'ビギナー',         emblem:'🥚', xpNext:100  },
+    { level:2,  name:'ウォーカー',       emblem:'👟', xpNext:250  },
+    { level:3,  name:'ライダー',         emblem:'🏇', xpNext:450  },
+    { level:4,  name:'バーナー',         emblem:'🔥', xpNext:700  },
+    { level:5,  name:'シェイパー',       emblem:'💪', xpNext:1000 },
+    { level:6,  name:'ウェーブマスター', emblem:'🌊', xpNext:1400 },
+    { level:7,  name:'コアキング',       emblem:'👑', xpNext:1900 },
+    { level:8,  name:'フィットネスヒーロー', emblem:'🦸', xpNext:2500 },
+    { level:9,  name:'レジェンド',       emblem:'🏆', xpNext:9999 },
+  ];
+
+  function getRankData() {
+    return JSON.parse(localStorage.getItem(LS_RANK) || '{"xp":0,"level":1}');
+  }
+
+  function saveRankData(data) {
+    localStorage.setItem(LS_RANK, JSON.stringify(data));
+  }
+
+  function getRankDef(level) {
+    return RANKS.find(r => r.level === level) || RANKS[RANKS.length - 1];
+  }
+
+  function addXP(xpGain) {
+    const data = getRankData();
+    const oldLevel = data.level;
+    data.xp += xpGain;
+    // レベルアップチェック
+    let rankDef = getRankDef(data.level);
+    while (data.xp >= rankDef.xpNext && data.level < RANKS[RANKS.length-1].level) {
+      data.level++;
+      rankDef = getRankDef(data.level);
+    }
+    saveRankData(data);
+    renderRankBar();
+    if (data.level > oldLevel) {
+      const newRank = getRankDef(data.level);
+      showLevelUpModal(newRank);
+    }
+    showToast(`+${xpGain} XP 獲得！🎉`);
+  }
+
+  function renderRankBar() {
+    const data = getRankData();
+    const rankDef = getRankDef(data.level);
+    const prevXP  = data.level > 1 ? getRankDef(data.level - 1).xpNext : 0;
+    const span    = rankDef.xpNext - prevXP;
+    const filled  = data.xp - prevXP;
+    const pct     = Math.min(100, Math.round((filled / span) * 100));
+
+    document.getElementById('rankEmblem').textContent = rankDef.emblem;
+    document.getElementById('rankName').textContent   = `Lv.${data.level} ${rankDef.name}`;
+    document.getElementById('xpFill').style.width     = `${pct}%`;
+    document.getElementById('xpLabel').textContent    = `${data.xp} XP → 次のランク: ${rankDef.xpNext} XP`;
+  }
+
+  function showLevelUpModal(rankDef) {
+    document.getElementById('modalIcon').textContent  = rankDef.emblem;
+    document.getElementById('modalTitle').textContent = `ランクアップ！Lv.${rankDef.level}`;
+    document.getElementById('modalDesc').textContent  = `「${rankDef.name}」になりました！\nこの調子で続けていこう！`;
+    document.getElementById('levelUpModal').classList.add('show');
+    if (navigator.vibrate) navigator.vibrate([100,50,100,50,300]);
+  }
+
+  /* ===================================================
+     ストリーク
+  =================================================== */
+  function calcStreak() {
+    const history = JSON.parse(localStorage.getItem(LS_HISTORY) || '[]');
+    const dates = history.map(h => h.date).sort().reverse();
+    if (!dates.length) return 0;
+    let streak = 0;
+    let cursor = new Date();
+    for (let i = 0; i < 365; i++) {
+      const s = `${cursor.getFullYear()}-${String(cursor.getMonth()+1).padStart(2,'0')}-${String(cursor.getDate()).padStart(2,'0')}`;
+      if (dates.includes(s)) {
+        streak++;
+      } else if (i > 0) {
+        break;
+      }
+      cursor.setDate(cursor.getDate() - 1);
+    }
+    return streak;
+  }
+
+  function renderStreak() {
+    document.getElementById('streakNum').textContent = calcStreak();
+  }
+
+  /* ===================================================
+     週間カレンダー
+  =================================================== */
+  function renderWeekCalendar() {
+    const history = JSON.parse(localStorage.getItem(LS_HISTORY) || '[]');
+    const histDates = {};
+    history.forEach(h => { histDates[h.date] = h.pct; });
+
+    const today = new Date();
+    const dow = today.getDay(); // 0=日
+    // 今週の月曜日を起点に日〜土を並べる
+    const weekStart = new Date(today);
+    weekStart.setDate(today.getDate() - dow); // 日曜始まり
+
+    const dayLabels = ['日','月','火','水','木','金','土'];
+    let html = `<div class="week-calendar">
+      <div class="week-calendar-title">📅 今週の達成カレンダー</div>
+      <div class="week-days">`;
+
+    for (let d = 0; d < 7; d++) {
+      const cur = new Date(weekStart);
+      cur.setDate(weekStart.getDate() + d);
+      const ds = `${cur.getFullYear()}-${String(cur.getMonth()+1).padStart(2,'0')}-${String(cur.getDate()).padStart(2,'0')}`;
+      const isToday = ds === getTodayStr();
+      const isRest  = SCHEDULE[cur.getDay()] === null;
+      const pct     = histDates[ds];
+      const isFuture = cur > today && !isToday;
+
+      let dotClass = 'week-day-dot';
+      let symbol   = dayLabels[d];
+      if (isRest)        { dotClass += ' rest'; symbol = '—'; }
+      else if (isFuture) { /* pending */ }
+      else if (pct >= 100) { dotClass += ' done'; symbol = '⭕'; }
+      else if (pct > 0)    { dotClass += ' partial'; symbol = '◔'; }
+      else if (!isFuture && !isRest) { symbol = '✕'; }
+      if (isToday)       { dotClass += ' today'; }
+
+      html += `<div class="week-day">
+        <div class="week-day-name">${dayLabels[d]}</div>
+        <div class="${dotClass}">${symbol}</div>
+      </div>`;
+    }
+    html += '</div></div>';
+    document.getElementById('weekCalendar').innerHTML = html;
+  }
 
   /* ===================================================
      今日のメニュー レンダリング
@@ -706,20 +1138,25 @@
     const pct = Math.round((done.length / todayTasks.length) * 100);
 
     const history = JSON.parse(localStorage.getItem(LS_HISTORY) || '[]');
-
-    // 同日の重複チェック：あれば上書き
     const existIdx = history.findIndex(h => h.date === todayStr);
+    const isNew = existIdx < 0;
     const entry = { date: todayStr, tasks: done, pct };
     if (existIdx >= 0) {
       history[existIdx] = entry;
     } else {
       history.unshift(entry);
     }
-
     localStorage.setItem(LS_HISTORY, JSON.stringify(history));
-    showToast('✅ 本日の実績を保存しました！');
 
-    // 履歴タブへ遷移
+    // XP付与（初回のみ。再保存は付与しない）
+    if (isNew) {
+      const xpGain = pct === 100 ? 30 : pct >= 50 ? 15 : 10;
+      setTimeout(() => addXP(xpGain), 800);
+    }
+
+    renderStreak();
+    renderWeekCalendar();
+    showToast('✅ 本日の実績を保存しました！');
     setTimeout(() => switchTab('history'), 700);
   }
 
@@ -1082,6 +1519,7 @@
       panel.classList.toggle('active', panel.id === `tab-${tabId}`);
     });
     if (tabId === 'history') renderHistory();
+    if (tabId === 'body') renderBodyTab();
   }
 
   document.querySelectorAll('.tab-btn').forEach(btn => {
@@ -1089,9 +1527,97 @@
   });
 
   /* ===================================================
+     体型記録
+  =================================================== */
+  function saveBodyLog() {
+    const w = parseFloat(document.getElementById('inputWeight').value);
+    const wst = parseFloat(document.getElementById('inputWaist').value);
+    if (isNaN(w) && isNaN(wst)) { showToast('数値を入力してください'); return; }
+    const logs = JSON.parse(localStorage.getItem(LS_BODY) || '[]');
+    const todayStr = getTodayStr();
+    const idx = logs.findIndex(l => l.date === todayStr);
+    const entry = { date: todayStr, weight: isNaN(w) ? null : w, waist: isNaN(wst) ? null : wst };
+    if (idx >= 0) logs[idx] = entry; else logs.push(entry);
+    logs.sort((a,b) => a.date.localeCompare(b.date));
+    localStorage.setItem(LS_BODY, JSON.stringify(logs));
+    document.getElementById('inputWeight').value = '';
+    document.getElementById('inputWaist').value  = '';
+    renderBodyTab();
+    showToast('📏 体型を記録しました！');
+  }
+
+  function deleteBodyLog(date) {
+    let logs = JSON.parse(localStorage.getItem(LS_BODY) || '[]');
+    logs = logs.filter(l => l.date !== date);
+    localStorage.setItem(LS_BODY, JSON.stringify(logs));
+    renderBodyTab();
+  }
+
+  function renderLineGraph(containerId, logs, key, color, unit) {
+    const el = document.getElementById(containerId);
+    const pts = logs.filter(l => l[key] !== null && l[key] !== undefined);
+    if (pts.length < 2) {
+      el.innerHTML = '<p style="color:var(--muted);font-size:0.8rem;text-align:center;padding:16px;">データが2件以上になるとグラフが表示されます</p>';
+      return;
+    }
+    const W = Math.min(560, window.innerWidth - 60);
+    const H = 120;
+    const pad = { l:36, r:10, t:10, b:24 };
+    const vals = pts.map(p => p[key]);
+    const minV = Math.min(...vals);
+    const maxV = Math.max(...vals);
+    const range = maxV - minV || 1;
+    const xStep = (W - pad.l - pad.r) / (pts.length - 1);
+
+    const toX = i => pad.l + i * xStep;
+    const toY = v => pad.t + (1 - (v - minV) / range) * (H - pad.t - pad.b);
+
+    let pathD = pts.map((p,i) => `${i===0?'M':'L'}${toX(i).toFixed(1)},${toY(p[key]).toFixed(1)}`).join(' ');
+    let dots  = pts.map((p,i) => `<circle cx="${toX(i).toFixed(1)}" cy="${toY(p[key]).toFixed(1)}" r="3.5" fill="${color}"/>`).join('');
+    let labels = pts.map((p,i) => {
+      const show = i === 0 || i === pts.length-1 || pts.length <= 6;
+      return show ? `<text x="${toX(i).toFixed(1)}" y="${H - 4}" text-anchor="middle" font-size="9" fill="#7da99a">${p.date.slice(5)}</text>` : '';
+    }).join('');
+    let yLabels = [minV, (minV+maxV)/2, maxV].map(v => {
+      const y = toY(v);
+      return `<text x="${pad.l - 4}" y="${y.toFixed(1)}" text-anchor="end" dominant-baseline="middle" font-size="9" fill="#7da99a">${v.toFixed(1)}</text>`;
+    }).join('');
+    let gridLines = [minV, (minV+maxV)/2, maxV].map(v => {
+      const y = toY(v);
+      return `<line x1="${pad.l}" y1="${y.toFixed(1)}" x2="${W-pad.r}" y2="${y.toFixed(1)}" stroke="#1f4545" stroke-dasharray="4,3"/>`;
+    }).join('');
+
+    el.innerHTML = `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">
+      ${gridLines}${yLabels}
+      <path d="${pathD}" fill="none" stroke="${color}" stroke-width="2.5" stroke-linejoin="round"/>
+      ${dots}${labels}
+    </svg>`;
+  }
+
+  function renderBodyTab() {
+    const logs = JSON.parse(localStorage.getItem(LS_BODY) || '[]');
+    renderLineGraph('weightGraph', logs, 'weight', '#2ecc71', 'kg');
+    renderLineGraph('waistGraph',  logs, 'waist',  '#3498db', 'cm');
+    const listEl = document.getElementById('bodyLogList');
+    if (!logs.length) {
+      listEl.innerHTML = '<p style="color:var(--muted);font-size:0.85rem;text-align:center;padding:16px;">まだデータがありません</p>';
+      return;
+    }
+    listEl.innerHTML = [...logs].reverse().map(l => `
+      <div class="body-log-item">
+        <span class="log-date">${formatDateJP(l.date)}</span>
+        <span class="log-vals">${l.weight != null ? l.weight+'kg' : ''} ${l.waist != null ? l.waist+'cm' : ''}</span>
+        <button class="body-log-del" onclick="deleteBodyLog('${l.date}')">✕</button>
+      </div>`).join('');
+  }
+
+  /* ===================================================
      初期化
   =================================================== */
+  renderRankBar();
+  renderStreak();
   renderMenu();
+  renderWeekCalendar();
   timerRestoreAll();
 </script>
 </body>
