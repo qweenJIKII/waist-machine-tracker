@@ -721,7 +721,10 @@
     </div>
 
     <div id="weekCalendar"></div>
-    <p class="section-label" id="dayLabel"></p>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
+      <p class="section-label" id="dayLabel" style="margin-bottom:0;"></p>
+      <button id="timerResetAllBtn" style="background:none;border:1px solid var(--muted);color:var(--muted);border-radius:8px;font-size:0.7rem;font-weight:700;padding:4px 10px;cursor:pointer;">🔄 タイマーリセット</button>
+    </div>
 
     <div id="menuContent"></div>
 
@@ -1263,6 +1266,7 @@
       };
     });
     localStorage.setItem(LS_TIMERS, JSON.stringify(data));
+    localStorage.setItem(LS_TIMERS + '_date', getTodayStr());
   }
 
   function timerStart(idx) {
@@ -1411,6 +1415,13 @@
      ページ復帰時：実行中タイマーを復元
   =================================================== */
   function timerRestoreAll() {
+    // 日付が変わっていたら古いタイマー状態を破棄
+    const savedDate = localStorage.getItem(LS_TIMERS + '_date');
+    if (savedDate !== getTodayStr()) {
+      localStorage.removeItem(LS_TIMERS);
+      localStorage.setItem(LS_TIMERS + '_date', getTodayStr());
+      return;
+    }
     const saved = JSON.parse(localStorage.getItem(LS_TIMERS) || '{}');
     Object.entries(saved).forEach(([idxStr, data]) => {
       const idx = parseInt(idxStr);
@@ -1495,6 +1506,20 @@
   /* ===================================================
      クリアボタン
   =================================================== */
+  document.getElementById('timerResetAllBtn').addEventListener('click', () => {
+    if (!confirm('全タイマーをリセットしますか？')) return;
+    Object.keys(timers).forEach(idx => {
+      clearInterval(timers[idx].interval);
+      clearTimeout(timers[idx].notifTimeout);
+    });
+    Object.keys(timers).forEach(k => delete timers[k]);
+    localStorage.removeItem(LS_TIMERS);
+    localStorage.setItem(LS_TIMERS + '_date', getTodayStr());
+    renderMenu();
+    timerRestoreAll();
+    showToast('🔄 タイマーをリセットしました');
+  });
+
   document.getElementById('clearBtn').addEventListener('click', () => {
     const history = JSON.parse(localStorage.getItem(LS_HISTORY) || '[]');
     if (history.length === 0) {
